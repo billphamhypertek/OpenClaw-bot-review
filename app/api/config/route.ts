@@ -4,6 +4,31 @@ import path from "path";
 
 // 配置文件路径
 const CONFIG_PATH = path.join(process.env.HOME || "", ".openclaw", "openclaw.json");
+const OPENCLAW_DIR = path.join(process.env.HOME || "", ".openclaw");
+
+// 从 IDENTITY.md 读取机器人名字
+function readIdentityName(agentId: string, agentDir?: string, workspace?: string): string | null {
+  const candidates = [
+    agentDir ? path.join(agentDir, "IDENTITY.md") : null,
+    workspace ? path.join(workspace, "IDENTITY.md") : null,
+    path.join(OPENCLAW_DIR, `agents/${agentId}/agent/IDENTITY.md`),
+    path.join(OPENCLAW_DIR, `workspace-${agentId}/IDENTITY.md`),
+    // 只有 main agent 才 fallback 到默认 workspace
+    agentId === "main" ? path.join(OPENCLAW_DIR, `workspace/IDENTITY.md`) : null,
+  ].filter(Boolean) as string[];
+
+  for (const p of candidates) {
+    try {
+      const content = fs.readFileSync(p, "utf-8");
+      const match = content.match(/\*\*Name:\*\*\s*(.+)/);
+      if (match) {
+        const name = match[1].trim();
+        if (name && !name.startsWith("_") && !name.startsWith("(")) return name;
+      }
+    } catch {}
+  }
+  return null;
+}
 
 export async function GET() {
   try {
@@ -27,7 +52,8 @@ export async function GET() {
     // 构建 agent 详情
     const agents = agentList.map((agent: any) => {
       const id = agent.id;
-      const name = agent.name || id;
+      const identityName = readIdentityName(id, agent.agentDir, agent.workspace);
+      const name = identityName || agent.name || id;
       const emoji = agent.identity?.emoji || "🤖";
       const model = agent.model || defaultModel;
 

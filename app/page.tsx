@@ -73,7 +73,9 @@ function AgentCard({ agent }: { agent: Agent }) {
         <span className="text-3xl">{agent.emoji}</span>
         <div>
           <h3 className="text-lg font-semibold text-[var(--text)]">{agent.name}</h3>
-          <span className="text-xs text-[var(--text-muted)]">ID: {agent.id}</span>
+          {agent.name !== agent.id && (
+            <span className="text-xs text-[var(--text-muted)]">ID: {agent.id}</span>
+          )}
         </div>
       </div>
 
