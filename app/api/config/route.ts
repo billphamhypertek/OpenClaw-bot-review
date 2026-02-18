@@ -42,7 +42,7 @@ interface GroupChat {
   channel: string;
 }
 
-function getGroupChats(agentIds: string[], agentMap: Record<string, { emoji: string; name: string }>): GroupChat[] {
+function getGroupChats(agentIds: string[], agentMap: Record<string, { emoji: string; name: string }>, feishuAgentIds: string[]): GroupChat[] {
   const groupAgents: Record<string, { agents: Set<string>; channel: string }> = {};
   for (const agentId of agentIds) {
     try {
@@ -65,6 +65,14 @@ function getGroupChats(agentIds: string[], agentMap: Record<string, { emoji: str
         }
       }
     } catch {}
+  }
+  // 所有绑定了飞书的 agent 都应该出现在已知的飞书群里
+  for (const [gid, v] of Object.entries(groupAgents)) {
+    if (v.channel === "feishu") {
+      for (const fid of feishuAgentIds) {
+        v.agents.add(fid);
+      }
+    }
   }
   return Object.entries(groupAgents)
     .filter(([, v]) => v.agents.size > 0)
@@ -196,8 +204,9 @@ export async function GET() {
     const agentMap: Record<string, { emoji: string; name: string }> = {};
     for (const a of agentsWithStatus) agentMap[a.id] = { emoji: a.emoji, name: a.name };
 
-    // 获取群聊信息
-    const groupChats = getGroupChats(agentIds, agentMap);
+    // 获取群聊信息（传入所有绑定了飞书的 agent id）
+    const feishuAgentIds = agentsWithStatus.filter((a: any) => a.platforms.some((p: any) => p.name === "feishu")).map((a: any) => a.id);
+    const groupChats = getGroupChats(agentIds, agentMap, feishuAgentIds);
 
     // 提取模型 providers
     const providers = Object.entries(config.models?.providers || {}).map(
