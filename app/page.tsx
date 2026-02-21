@@ -271,7 +271,7 @@ function AgentCard({ agent, gatewayPort, gatewayToken, t, testResult }: { agent:
 
         <div>
           <span className="text-xs text-[var(--text-muted)] block mb-1">{t("agent.platform")}</span>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-col gap-1">
             {agent.platforms.map((p, i) => (
               <PlatformBadge key={i} platform={p} agentId={agent.id} gatewayPort={gatewayPort} gatewayToken={gatewayToken} t={t} />
             ))}
