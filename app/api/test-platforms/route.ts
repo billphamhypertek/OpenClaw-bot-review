@@ -254,7 +254,7 @@ async function testAgentSession(agentId: string, sessionKey: string | undefined,
       headers["x-openclaw-session-key"] = sessionKey;
     }
 
-    const resp = await fetch(`http://localhost:${gatewayPort}/v1/chat/completions`, {
+    const resp = await fetch(`http://127.0.0.1:${gatewayPort}/v1/chat/completions`, {
       method: "POST",
       headers,
       body: JSON.stringify({
