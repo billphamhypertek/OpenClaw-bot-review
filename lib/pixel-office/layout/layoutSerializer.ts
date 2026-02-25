@@ -317,18 +317,15 @@ export function createDefaultLayout(): OfficeLayout {
     { uid: 'bench-r', type: FurnitureType.BENCH, col: 16, row: 9 },
 
     // ── Bottom lounge / break area ──
-    { uid: 'fridge-b', type: FurnitureType.FRIDGE, col: 1, row: 11 },
-    { uid: 'water-cooler-b', type: FurnitureType.WATER_COOLER, col: 3, row: 11 },
-    { uid: 'deco-b', type: FurnitureType.DECO_3, col: 9, row: 13 },
+    { uid: 'fridge-b', type: FurnitureType.FRIDGE, col: 1, row: 9.5 },
+    { uid: 'water-cooler-b', type: FurnitureType.WATER_COOLER, col: 8, row: 9.5 },
+    { uid: 'deco-b', type: FurnitureType.DECO_3, col: 9, row: 9.5 },
     { uid: 'plant-b1', type: FurnitureType.PLANT, col: 1, row: 15 },
     { uid: 'plant-b2', type: FurnitureType.PLANT_SMALL, col: 19, row: 15 },
     { uid: 'plant-b3', type: FurnitureType.PLANT_SMALL, col: 19, row: 11 },
-    { uid: 'painting-l1', type: FurnitureType.PAINTING_LARGE_1, col: 6, row: 10 },
     { uid: 'painting-l2', type: FurnitureType.PAINTING_LARGE_2, col: 11, row: 10 },
-    { uid: 'painting-s1', type: FurnitureType.PAINTING_SMALL_1, col: 1, row: 13 },
-    { uid: 'painting-s2', type: FurnitureType.PAINTING_SMALL_2, col: 19, row: 13 },
-    { uid: 'bookshelf-b', type: FurnitureType.BOOKSHELF, col: 17, row: 11 },
-    { uid: 'sofa-b', type: FurnitureType.SOFA, col: 14.5, row: 13.5, rotation: 180 },
+    { uid: 'bookshelf-b', type: FurnitureType.BOOKSHELF, col: 18, row: 9.5 },
+    { uid: 'sofa-b', type: FurnitureType.SOFA, col: 10, row: 14, rotation: 180 },
     { uid: 'bench-b1', type: FurnitureType.BENCH, col: 8, row: 15 },
     { uid: 'bench-b2', type: FurnitureType.BENCH, col: 12, row: 15 },
     { uid: 'lamp-b', type: FurnitureType.LAMP, col: 7, row: 13 },
@@ -425,24 +422,24 @@ export function getInteractionPoints(
     if (!entry || !INTERACTABLE_TYPES.has(item.type as any)) continue
     // Check tiles along the bottom edge + 1 row below the furniture
     for (let dc = 0; dc < entry.footprintW; dc++) {
-      const belowCol = item.col + dc
-      const belowRow = item.row + entry.footprintH
+      const belowCol = Math.round(item.col + dc)
+      const belowRow = Math.round(item.row + entry.footprintH)
       if (isWalkable(belowCol, belowRow, tileMap, blockedTiles)) {
         points.push({ col: belowCol, row: belowRow, facingDir: Direction.UP, furnitureType: item.type })
       }
     }
     // Check tiles along the left edge
     for (let dr = 0; dr < entry.footprintH; dr++) {
-      const leftCol = item.col - 1
-      const leftRow = item.row + dr
+      const leftCol = Math.round(item.col - 1)
+      const leftRow = Math.round(item.row + dr)
       if (isWalkable(leftCol, leftRow, tileMap, blockedTiles)) {
         points.push({ col: leftCol, row: leftRow, facingDir: Direction.RIGHT, furnitureType: item.type })
       }
     }
     // Check tiles along the right edge
     for (let dr = 0; dr < entry.footprintH; dr++) {
-      const rightCol = item.col + entry.footprintW
-      const rightRow = item.row + dr
+      const rightCol = Math.round(item.col + entry.footprintW)
+      const rightRow = Math.round(item.row + dr)
       if (isWalkable(rightCol, rightRow, tileMap, blockedTiles)) {
         points.push({ col: rightCol, row: rightRow, facingDir: Direction.LEFT, furnitureType: item.type })
       }
