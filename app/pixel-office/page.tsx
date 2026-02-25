@@ -729,7 +729,9 @@ export default function PixelOfficePage() {
               agent.state === 'working' ? 'bg-green-500/10 border-green-500/30 text-green-500 animate-pulse' :
               agent.state === 'idle' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500 animate-pulse' :
               'bg-slate-600/20 border-slate-500/40 text-slate-300'
-            }`}>
+            }`}
+              {...(agent.state === 'working' ? { style: { animationDuration: '1.3s' } } : {})}
+            >
               <span>{agent.emoji}</span>
               <span className="text-sm">{agent.name}</span>
               {agent.state === 'working' && <span className="text-[10px] uppercase tracking-wider opacity-70">{t('pixelOffice.state.working')}</span>}
