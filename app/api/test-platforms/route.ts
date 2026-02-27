@@ -553,43 +553,7 @@ export async function POST() {
 
     const platformResults = await Promise.all(platformTests);
 
-    // Phase 2: Agent session tests via chatCompletions API (sequential)
-    // Routes messages to platform DM sessions (feishu, whatsapp, etc.)
-    const agentResults: PlatformTestResult[] = [];
-    for (const id of agentIds) {
-      // Feishu DM session test
-      const feishuDmUser = getFeishuDmUser(id);
-      const feishuSessionKey = feishuDmUser ? `agent:${id}:feishu:direct:${feishuDmUser}` : `agent:${id}:main`;
-      const r = await testAgentSession(id, feishuSessionKey, gatewayPort, gatewayToken);
-      agentResults.push({
-        agentId: r.agentId,
-        platform: "agent",
-        ok: r.ok,
-        detail: r.reply,
-        error: r.error,
-        elapsed: r.elapsed,
-      });
-
-      // WhatsApp DM session test
-      const whatsappDmUser = getWhatsappDmUser(id);
-      if (whatsappDmUser) {
-        const waSessionKey = `agent:${id}:whatsapp:direct:${whatsappDmUser}`;
-        const wr = await testAgentSession(id, waSessionKey, gatewayPort, gatewayToken);
-        agentResults.push({
-          agentId: wr.agentId,
-          platform: "agent-whatsapp",
-          ok: wr.ok,
-          detail: wr.reply,
-          error: wr.error,
-          elapsed: wr.elapsed,
-        });
-      }
-    }
-
-    // Flatten all results: platform tests + agent tests
-    const results = [...platformResults, ...agentResults];
-
-    return NextResponse.json({ results });
+    return NextResponse.json({ results: platformResults });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

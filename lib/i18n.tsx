@@ -81,6 +81,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.testingPlatforms": "⏳ 测试平台中...",
     "home.testSessions": "🔌 测试 Agent",
     "home.testingSessions": "⏳ 测试中...",
+    "home.testDmSessions": "💬 测试 DM Session",
+    "home.testingDmSessions": "⏳ 测试中...",
 
     // agent card
     "agent.model": "模型",
@@ -308,6 +310,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "home.testingPlatforms": "⏳ Testing Platforms...",
     "home.testSessions": "🔌 Test Agents",
     "home.testingSessions": "⏳ Testing...",
+    "home.testDmSessions": "💬 Test DM Sessions",
+    "home.testingDmSessions": "⏳ Testing...",
 
     // agent card
     "agent.model": "Model",

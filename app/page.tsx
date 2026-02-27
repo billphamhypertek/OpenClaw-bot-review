@@ -318,7 +318,7 @@ function AgentStatusBadge({ state, t }: { state?: string; t: TFunc }) {
 }
 
 // Agent 卡片
-function AgentCard({ agent, gatewayPort, gatewayToken, t, testResult, platformTestResults, sessionTestResult, agentState }: { agent: Agent; gatewayPort: number; gatewayToken?: string; t: TFunc; testResult?: { ok: boolean; text?: string; error?: string; elapsed: number } | null; platformTestResults?: Record<string, PlatformTestResult | null>; sessionTestResult?: { ok: boolean; reply?: string; error?: string; elapsed: number } | null; agentState?: string }) {
+function AgentCard({ agent, gatewayPort, gatewayToken, t, testResult, platformTestResults, sessionTestResult, agentState, dmSessionResults }: { agent: Agent; gatewayPort: number; gatewayToken?: string; t: TFunc; testResult?: { ok: boolean; text?: string; error?: string; elapsed: number } | null; platformTestResults?: Record<string, PlatformTestResult | null>; sessionTestResult?: { ok: boolean; reply?: string; error?: string; elapsed: number } | null; agentState?: string; dmSessionResults?: Record<string, PlatformTestResult | null> }) {
   const sessionKey = `agent:${agent.id}:main`;
   let sessionUrl = `http://localhost:${gatewayPort}/chat?session=${encodeURIComponent(sessionKey)}`;
   if (gatewayToken) sessionUrl += `&token=${encodeURIComponent(gatewayToken)}`;
@@ -387,23 +387,25 @@ function AgentCard({ agent, gatewayPort, gatewayToken, t, testResult, platformTe
             {agent.platforms.map((p, i) => {
               const pKey = `${agent.id}:${p.name}`;
               const pResult = platformTestResults ? platformTestResults[pKey] : undefined;
+              const dmKey = `${agent.id}:${p.name}`;
+              const dmResult = dmSessionResults ? dmSessionResults[dmKey] : undefined;
               return (
-                <PlatformBadge key={i} platform={p} agentId={agent.id} gatewayPort={gatewayPort} gatewayToken={gatewayToken} t={t} testResult={pResult} />
+                <div key={i} className="grid grid-cols-2 items-center gap-2">
+                  <PlatformBadge platform={p} agentId={agent.id} gatewayPort={gatewayPort} gatewayToken={gatewayToken} t={t} testResult={pResult} />
+                  <div className="flex justify-end">
+                    {dmResult === undefined ? (
+                      <span className="text-sm text-[var(--text-muted)]">DM Session: --</span>
+                    ) : dmResult === null ? (
+                      <span className="text-sm text-[var(--text-muted)] animate-pulse">DM Session: ⏳</span>
+                    ) : dmResult.ok ? (
+                      <span className="text-green-400 text-sm cursor-help" title={`DM Session ${dmResult.elapsed}ms${dmResult.detail ? ' · ' + dmResult.detail : ''}`}>DM Session: ✅</span>
+                    ) : (
+                      <span className="text-red-400 text-sm cursor-help" title={dmResult.error || ''}>DM Session: ❌</span>
+                    )}
+                  </div>
+                </div>
               );
             })}
-            {/* DM Session health check result */}
-            {(() => {
-              const aKey = `${agent.id}:agent`;
-              const aResult = platformTestResults ? platformTestResults[aKey] : undefined;
-              if (aResult === undefined) return null;
-              if (aResult === null) return <span className="text-xs text-[var(--text-muted)] animate-pulse">⏳ DM Session...</span>;
-              return (
-                <span className={`inline-flex items-center gap-1 text-xs ${aResult.ok ? "text-green-400" : "text-red-400"}`}
-                  title={aResult.ok ? `${aResult.elapsed}ms${aResult.detail ? ' · ' + aResult.detail : ''}` : aResult.error || ''}>
-                  {aResult.ok ? "✅" : "❌"} DM Session {aResult.ok ? `(${aResult.elapsed}ms)` : ""}
-                </span>
-              );
-            })()}
           </div>
         </div>
 
@@ -492,6 +494,8 @@ export default function Home() {
   const [testingPlatforms, setTestingPlatforms] = useState(false);
   const [sessionTestResults, setSessionTestResults] = useState<Record<string, { ok: boolean; reply?: string; error?: string; elapsed: number } | null> | null>(null);
   const [testingSessions, setTestingSessions] = useState(false);
+  const [dmSessionResults, setDmSessionResults] = useState<Record<string, PlatformTestResult | null> | null>(null);
+  const [testingDmSessions, setTestingDmSessions] = useState(false);
   const [agentStates, setAgentStates] = useState<Record<string, string>>({});
 
   const RANGE_LABELS: Record<TimeRange, string> = { daily: t("range.daily"), weekly: t("range.weekly"), monthly: t("range.monthly") };
@@ -548,6 +552,14 @@ export default function Home() {
         console.error('Failed to parse sessionTestResults from localStorage', e);
       }
     }
+    const savedDmSessionResults = localStorage.getItem('dmSessionResults');
+    if (savedDmSessionResults) {
+      try {
+        setDmSessionResults(JSON.parse(savedDmSessionResults));
+      } catch (e) {
+        console.error('Failed to parse dmSessionResults from localStorage', e);
+      }
+    }
   }, [fetchData]);
 
   // 保存测试结果到 localStorage
@@ -568,6 +580,12 @@ export default function Home() {
       localStorage.setItem('sessionTestResults', JSON.stringify(sessionTestResults));
     }
   }, [sessionTestResults]);
+
+  useEffect(() => {
+    if (dmSessionResults) {
+      localStorage.setItem('dmSessionResults', JSON.stringify(dmSessionResults));
+    }
+  }, [dmSessionResults]);
 
   const testAllAgents = useCallback(() => {
     setTesting(true);
@@ -629,6 +647,30 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => setTestingSessions(false));
+  }, [data]);
+
+  const testAllDmSessions = useCallback(() => {
+    setTestingDmSessions(true);
+    const pending: Record<string, any> = {};
+    if (data) {
+      for (const a of data.agents) {
+        for (const p of a.platforms) {
+          pending[`${a.id}:${p.name}`] = null;
+        }
+      }
+    }
+    setDmSessionResults(pending);
+    fetch("/api/test-dm-sessions", { method: "POST" })
+      .then((r) => r.json())
+      .then((resp) => {
+        if (resp.results) {
+          const map: Record<string, PlatformTestResult> = {};
+          for (const r of resp.results) map[`${r.agentId}:${r.platform}`] = r;
+          setDmSessionResults(map);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setTestingDmSessions(false));
   }, [data]);
 
   // 定时刷新
@@ -737,6 +779,13 @@ export default function Home() {
           >
             {testingSessions ? t("home.testingSessions") : t("home.testSessions")}
           </button>
+          <button
+            onClick={testAllDmSessions}
+            disabled={testingDmSessions}
+            className="px-4 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--text)] text-sm font-medium hover:border-[var(--accent)] transition disabled:opacity-50 cursor-pointer"
+          >
+            {testingDmSessions ? t("home.testingDmSessions") : t("home.testDmSessions")}
+          </button>
         </div>
       </div>
 
@@ -748,7 +797,7 @@ export default function Home() {
       {/* 卡片墙 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {data.agents.map((agent) => (
-          <AgentCard key={agent.id} agent={agent} gatewayPort={data.gateway?.port || 18789} gatewayToken={data.gateway?.token} t={t} testResult={testResults?.[agent.id]} platformTestResults={platformTestResults || undefined} sessionTestResult={sessionTestResults?.[agent.id]} agentState={agentStates[agent.id]} />
+          <AgentCard key={agent.id} agent={agent} gatewayPort={data.gateway?.port || 18789} gatewayToken={data.gateway?.token} t={t} testResult={testResults?.[agent.id]} platformTestResults={platformTestResults || undefined} sessionTestResult={sessionTestResults?.[agent.id]} agentState={agentStates[agent.id]} dmSessionResults={dmSessionResults || undefined} />
         ))}
       </div>
 
