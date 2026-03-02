@@ -42,7 +42,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "alerts.checkInterval": "检查间隔",
 
     // common
-    "common.loading": "加载中...",
+    "common.loading": "思考中...",
     "common.loadError": "加载失败",
     "common.backHome": "← 返回首页",
     "common.backOverview": "← 返回总览",
@@ -280,7 +280,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "alerts.checkInterval": "Check Interval",
 
     // common
-    "common.loading": "Loading...",
+    "common.loading": "thinking...",
     "common.loadError": "Failed to load",
     "common.backHome": "← Back to Home",
     "common.backOverview": "← Back to Overview",
