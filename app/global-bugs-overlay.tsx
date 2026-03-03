@@ -49,9 +49,23 @@ export function GlobalBugsOverlay() {
     const onConfigChanged = () => applyConfig();
     const onLogoDragStart = () => {
       if (!systemRef.current) return;
-      // Sidebar logo anchor (approximate screen space), target off-screen bottom-right.
-      const startX = 58 / BUGS_ZOOM;
-      const startY = 42 / BUGS_ZOOM;
+      // Detect mobile viewport
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+      // Calculate logo position based on viewport
+      let startX: number;
+      let startY: number;
+
+      if (isMobile) {
+        // Mobile: logo is in top header, centered horizontally
+        startX = (window.innerWidth / 2) / BUGS_ZOOM;
+        startY = 28 / BUGS_ZOOM; // Half of header height (h-14 = 56px)
+      } else {
+        // Desktop: logo is in left sidebar
+        startX = 58 / BUGS_ZOOM;
+        startY = 42 / BUGS_ZOOM;
+      }
+
       const targetX = (window.innerWidth + 180) / BUGS_ZOOM;
       const targetY = (window.innerHeight + 160) / BUGS_ZOOM;
       systemRef.current.startLogoCarry(startX, startY, targetX, targetY);
