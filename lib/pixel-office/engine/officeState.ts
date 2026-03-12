@@ -416,7 +416,7 @@ export class OfficeState {
   private gatewaySreError: string | null = null
   private gatewaySreResponseMs: number | null = null
   private gatewaySreCheckedAt: number | null = null
-  private locale: OfficeLocale = 'zh-TW'
+  private locale: OfficeLocale = 'zh'
 
   getTempWorkerLabel(): string {
     return getTempWorkerLabel(this.locale)
@@ -446,7 +446,7 @@ export class OfficeState {
     return getBlockedTiles(furniture, nonBlockingSeatTiles)
   }
 
-  constructor(layout?: OfficeLayout, locale: OfficeLocale = 'zh-TW') {
+  constructor(layout?: OfficeLayout, locale: OfficeLocale = 'zh') {
     this.locale = locale
     this.layout = layout || createDefaultLayout()
     this.tileMap = layoutToTileMap(this.layout)

@@ -866,7 +866,7 @@ const I18nContext = createContext<I18nContextType>({
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("zh-TW");
+  const [locale, setLocaleState] = useState<Locale>("zh");
 
   useEffect(() => {
     const saved = localStorage.getItem("locale") as Locale;
