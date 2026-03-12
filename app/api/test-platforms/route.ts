@@ -440,11 +440,14 @@ function getQqbotDmUser(agentId: string): string | null {
   }
 }
 
-function getQqbotAllowlistUser(qqbotConfig: any): string | null {
-  const list = Array.isArray(qqbotConfig?.allowFrom)
-    ? qqbotConfig.allowFrom
-    : Array.isArray(qqbotConfig?.dm?.allowFrom)
-      ? qqbotConfig.dm.allowFrom
+function getQqbotAllowlistUser(qqbotConfig: any, accountId?: string | null): string | null {
+  const accountCfg = accountId && accountId !== "default"
+    ? qqbotConfig?.accounts?.[accountId]
+    : qqbotConfig;
+  const list = Array.isArray(accountCfg?.allowFrom)
+    ? accountCfg.allowFrom
+    : Array.isArray(accountCfg?.dm?.allowFrom)
+      ? accountCfg.dm.allowFrom
       : [];
   const first = list.find((v: any) => typeof v === "string" && v.trim().length > 0);
   return first ? first.trim() : null;
@@ -468,8 +471,33 @@ function normalizeQqbotTarget(target: string | null): string | null {
   return `qqbot:c2c:${raw.toUpperCase()}`;
 }
 
-function resolveQqbotCredentials(qqbotConfig: any): { accountId: string; appId: string; clientSecret: string } | null {
+function resolveQqbotCredentials(
+  qqbotConfig: any,
+  preferredAccountId?: string | null
+): { accountId: string; appId: string; clientSecret: string } | null {
   if (!qqbotConfig || qqbotConfig.enabled === false) return null;
+
+  if (
+    preferredAccountId &&
+    preferredAccountId !== "default" &&
+    qqbotConfig.accounts &&
+    typeof qqbotConfig.accounts === "object"
+  ) {
+    const account = qqbotConfig.accounts[preferredAccountId];
+    if (
+      account &&
+      typeof account.appId === "string" &&
+      account.appId.trim() &&
+      typeof account.clientSecret === "string" &&
+      account.clientSecret.trim()
+    ) {
+      return {
+        accountId: preferredAccountId,
+        appId: account.appId.trim(),
+        clientSecret: account.clientSecret.trim(),
+      };
+    }
+  }
 
   if (
     typeof qqbotConfig.appId === "string" &&
@@ -586,11 +614,12 @@ async function testWhatsapp(
 async function testQqbot(
   agentId: string,
   qqbotConfig: any,
+  qqbotAccountId: string | null,
   testUserId: string | null,
   recipientSource: "session" | "allowFrom" | "none"
 ): Promise<PlatformTestResult> {
   const startTime = Date.now();
-  const creds = resolveQqbotCredentials(qqbotConfig);
+  const creds = resolveQqbotCredentials(qqbotConfig, qqbotAccountId);
   if (!creds) {
     return {
       agentId, platform: "qqbot", ok: false,
@@ -762,14 +791,24 @@ export async function POST() {
         sequentialPlatformTests.push(() => testWhatsapp(id, gatewayPort, gatewayToken, whatsappTestUser, source));
       }
 
-      // QQBot: only test once, via `openclaw message send`
-      if (id === "main" && qqbotConfig && qqbotConfig.enabled !== false) {
+      // QQBot: test the main agent plus any non-main agent explicitly bound to qqbot,
+      // so the platform test results line up with the cards rendered on the home page.
+      const hasQqbotBinding = bindings.some(
+        (b: any) => b.agentId === id && b.match?.channel === "qqbot"
+      );
+      if (qqbotConfig && qqbotConfig.enabled !== false && (id === "main" || hasQqbotBinding)) {
+        const qqbotBinding = bindings.find(
+          (b: any) => b.agentId === id && b.match?.channel === "qqbot"
+        );
+        const qqbotAccountId = typeof qqbotBinding?.match?.accountId === "string" && qqbotBinding.match.accountId.trim()
+          ? qqbotBinding.match.accountId.trim()
+          : (id === "main" ? "default" : id);
         const recentDmUser = normalizeQqbotTarget(getQqbotDmUser(id));
-        const allowFromUser = normalizeQqbotTarget(getQqbotAllowlistUser(qqbotConfig));
+        const allowFromUser = normalizeQqbotTarget(getQqbotAllowlistUser(qqbotConfig, qqbotAccountId));
         const qqbotTestUser = recentDmUser || allowFromUser || null;
         const source: "session" | "allowFrom" | "none" =
           recentDmUser ? "session" : (allowFromUser ? "allowFrom" : "none");
-        sequentialPlatformTests.push(() => testQqbot(id, qqbotConfig, qqbotTestUser, source));
+        sequentialPlatformTests.push(() => testQqbot(id, qqbotConfig, qqbotAccountId, qqbotTestUser, source));
       }
     }
 
